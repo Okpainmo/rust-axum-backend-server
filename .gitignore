@@ -1,2 +1,11 @@
 /target
 .vscode
+bash.exe.stackdump
+
+# .env
+.env.development
+.env.production
+.env.staging
+.env.template
+.env
+.env*
