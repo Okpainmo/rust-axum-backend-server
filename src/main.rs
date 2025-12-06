@@ -5,6 +5,8 @@ use axum::{
 };
 
 use std::net::SocketAddr;
+
+// environmental variables... 
 use dotenvy;
 use std::env;
 
@@ -16,31 +18,12 @@ pub mod utils;
 // db import
 mod db; // include the db folder
 use db::connect_postgres::connect_pg;
+use crate::utils::load_env::load_env;
 
 // controllers import
-mod controllers;
-use controllers::register_user::register_user;
-use controllers::login_user::login_user;
+mod domains;
 
-
-
-fn load_env() {
-    dotenvy::dotenv().ok();
-
-    let env = env::var("DEPLOY_ENV").unwrap_or("development".into());
-    let filename = format!(".env.{}", env);
-
-    dotenvy::from_filename(&filename).ok();
-    // println!("Loaded config: {}", filename);
-}
-
-// IntoResponse setup for custom status code usage
-// impl<T: Serialize> IntoResponse for (StatusCode, ApiResponse<T>) {
-//     fn into_response(self) -> Response {
-//         let (status, body) = self;
-//         (status, Json(body)).into_response()
-//     }
-// }
+use crate::domains::auth::router::auth_routes;
 
 fn initialize_logging() {
     tracing_subscriber::fmt()
@@ -75,9 +58,10 @@ async fn main() {
     let db_pool = connect_pg(database_url.clone()).await;
 
     let app = Router::new()
-        .route("/api/v1/auth/register", post(register_user))
-        .route("/api/v1/auth/log-in", post(login_user))
+        .nest("/api/v1", auth_routes())
         .layer(Extension(db_pool));
+    // .nest("/users", user_routes());
+
 
     // Server address
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
